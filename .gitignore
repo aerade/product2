@@ -218,3 +218,12 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Lectory runtime and web build
+frontend/node_modules/
+frontend/dist/
+data/
+work/
+*.log
+.env
+*.tsbuildinfo

@@ -193,10 +193,22 @@ function Auth({ onLogin }: { onLogin: (u: User) => void }) {
     <div className="auth-page">
       <div className="auth-story">
         <Brand />
-        <img
-          src={art("hero")}
-          alt="Объёмная книга с символом воспроизведения и орбитой видео"
-        />
+        <div className="auth-art" aria-hidden="true">
+          <img
+            className="auth-art-light"
+            src="/art/auth-story-light.png"
+            alt=""
+            width={1024}
+            height={1536}
+          />
+          <img
+            className="auth-art-dark"
+            src="/art/auth-story-dark.png"
+            alt=""
+            width={1024}
+            height={1536}
+          />
+        </div>
       </div>
       <div className="auth-form-wrap">
         <div className="auth-theme">

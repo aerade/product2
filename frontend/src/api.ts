@@ -45,6 +45,7 @@ export type User = {
   name: string;
   email: string;
   role: "viewer" | "teacher" | "admin";
+  avatar: number;
 };
 export type Segment = {
   id: string;
@@ -60,6 +61,7 @@ export type Lecture = {
   course: string | null;
   course_id: string | null;
   author: string;
+  author_avatar: number;
   source: string;
   source_url: string | null;
   external_id: string | null;

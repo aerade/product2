@@ -59,6 +59,7 @@ import {
 } from "./api";
 import Player, { type PlayerHandle } from "./Player";
 import ThemeSwitch from "./ThemeSwitch";
+import Avatar from "./Avatar";
 
 const art = (name: string) => "/art/" + name + ".webp";
 const plural = (n: number, forms: string[]) =>
@@ -516,7 +517,7 @@ export default function App() {
             <ArrowUpRight size={15} />
           </button>
           <div className="profile">
-            <span className="avatar">{user.name.charAt(0).toUpperCase()}</span>
+            <Avatar n={user.avatar} />
             <div>
               <strong>{user.name}</strong>
               <small>{roleLabel[user.role]}</small>
@@ -570,7 +571,7 @@ export default function App() {
             <ThemeSwitch />
             <span className="connection-dot" />
             Учиться — значит открывать
-            <span className="mini-avatar">{user.name.charAt(0)}</span>
+            <Avatar n={user.avatar} className="mini-avatar" />
           </div>
         </header>
         <main>
@@ -869,7 +870,7 @@ function LectureCard({ lecture: l }: { lecture: Lecture }) {
         <h3>{l.title}</h3>
         <p>{l.description}</p>
         <div className="card-bottom">
-          <span className="author-avatar">{l.author.charAt(0)}</span>
+          <Avatar n={l.author_avatar} className="author-avatar" />
           <span>{l.author}</span>
           <ArrowUpRight size={19} />
         </div>
@@ -1209,7 +1210,7 @@ function LecturePage({
           </span>
           <h1>{lecture.title}</h1>
           <div className="lecture-byline">
-            <span className="author-avatar">{lecture.author.charAt(0)}</span>
+            <Avatar n={lecture.author_avatar} className="author-avatar" />
             {lecture.author}
             <span>·</span>
             <Clock3 size={14} />
@@ -2543,7 +2544,7 @@ function AdminPage({
               {data.users.map((u) => (
                 <tr key={u.id}>
                   <td>
-                    <span className="author-avatar">{u.name.charAt(0)}</span>
+                    <Avatar n={u.avatar} className="author-avatar" />
                     <strong>{u.name}</strong>
                     {u.id === user.id && <small>Это вы</small>}
                   </td>

@@ -78,10 +78,11 @@ def register(data: Registration, request: Request, response: Response):
     try:
         with db() as conn:
             conn.execute('INSERT INTO users(id,email,name,password_hash) VALUES(?,?,?,?)', (user_id, data.email, data.name.strip(), hash_password(data.password)))
+            avatar = conn.execute('SELECT avatar FROM users WHERE id=?', (user_id,)).fetchone()['avatar']
     except sqlite3.IntegrityError:
         raise HTTPException(409, 'Этот адрес уже зарегистрирован. Войдите в аккаунт.')
     set_session(response, user_id)
-    return {'id': user_id, 'email': data.email, 'name': data.name.strip(), 'role': 'viewer'}
+    return {'id': user_id, 'email': data.email, 'name': data.name.strip(), 'role': 'viewer', 'avatar': avatar}
 
 @app.post('/api/auth/login')
 def login(data: Credentials, request: Request, response: Response):
@@ -93,7 +94,7 @@ def login(data: Credentials, request: Request, response: Response):
     if not user:
         raise HTTPException(401, 'Неверный адрес или пароль.')
     set_session(response, user['id'])
-    return {k: user[k] for k in ('id', 'email', 'name', 'role')}
+    return {k: user[k] for k in ('id', 'email', 'name', 'role', 'avatar')}
 
 _DUMMY_HASH = hash_password('dummy-password-no-account')
 
@@ -114,7 +115,7 @@ def health():
         conn.execute('SELECT 1').fetchone()
     return {'status': 'ok', 'generation_configured': llm_configured()}
 
-LECTURE_COLUMNS = 'l.id,l.owner_id,l.course_id,l.title,l.description,l.source,l.source_url,l.external_id,l.cover,l.status,l.duration,l.error,l.is_demo,l.created_at,c.title AS course,u.name AS author'
+LECTURE_COLUMNS = 'l.id,l.owner_id,l.course_id,l.title,l.description,l.source,l.source_url,l.external_id,l.cover,l.status,l.duration,l.error,l.is_demo,l.created_at,c.title AS course,u.name AS author,u.avatar AS author_avatar'
 
 @app.get('/api/courses')
 def courses(user: User):
@@ -409,7 +410,7 @@ def suggest(data: Suggestion, user: User):
 def admin_dashboard(user: User):
     require_admin(user)
     with db() as conn:
-        return {'users': [dict(r) for r in conn.execute('SELECT id,email,name,role,created_at FROM users ORDER BY created_at DESC')],
+        return {'users': [dict(r) for r in conn.execute('SELECT id,email,name,role,avatar,created_at FROM users ORDER BY created_at DESC')],
             'suggestions': [dict(r) for r in conn.execute('SELECT s.*,u.name AS author FROM video_suggestions s JOIN users u ON u.id=s.user_id ORDER BY s.created_at DESC')]}
 
 class RoleChange(BaseModel):

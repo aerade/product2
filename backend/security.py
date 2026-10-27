@@ -20,7 +20,7 @@ def current_user(session: str | None = Cookie(default=None)):
         raise HTTPException(401, 'Войдите в аккаунт, чтобы продолжить.')
     digest = hashlib.sha256(session.encode()).hexdigest()
     with db() as conn:
-        user = conn.execute('SELECT u.id,u.email,u.name,u.role FROM users u JOIN sessions s ON u.id=s.user_id WHERE s.token_hash=? AND s.expires_at>?', (digest, time.time())).fetchone()
+        user = conn.execute('SELECT u.id,u.email,u.name,u.role,u.avatar FROM users u JOIN sessions s ON u.id=s.user_id WHERE s.token_hash=? AND s.expires_at>?', (digest, time.time())).fetchone()
     if not user:
         raise HTTPException(401, 'Сессия завершилась. Войдите снова.')
     return dict(user)

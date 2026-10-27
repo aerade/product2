@@ -543,6 +543,25 @@ a svg {
   color: var(--secondary);
   font-weight: 700;
 }
+.user-avatar {
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.user-avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.user-avatar .avatar-dark {
+  display: none;
+}
+:root[data-theme="dark"] .user-avatar .avatar-light {
+  display: none;
+}
+:root[data-theme="dark"] .user-avatar .avatar-dark {
+  display: block;
+}
 .profile > div {
   min-width: 0;
   flex: 1;

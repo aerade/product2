@@ -791,28 +791,9 @@ a svg {
   gap: 15px;
   margin-bottom: 22px;
 }
-.course-tabs {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.course-tabs button {
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  padding: 8px 12px;
-  font-size: 10px;
-  color: var(--muted-foreground);
-  white-space: nowrap;
-}
-.course-tabs button.selected {
-  background: var(--accent);
-  border-color: var(--ring);
-  color: var(--primary);
+.catalog-all {
+  font-size: 12px;
   font-weight: 650;
-}
-.course-tabs button:hover {
-  background: var(--accent);
 }
 .catalog-controls {
   display: flex;
@@ -838,17 +819,67 @@ a svg {
   color: var(--muted-foreground);
 }
 .sort-control {
+  position: relative;
+  color: var(--foreground);
+}
+.sort-control summary {
   display: flex;
   align-items: center;
   gap: 7px;
-  color: var(--muted-foreground);
-}
-.sort-control select {
-  font-size: 9px;
+  padding: 6px 0;
   border: 0;
   background: transparent;
+  cursor: pointer;
+  font-size: 10px;
+  list-style: none;
+  white-space: nowrap;
+}
+.sort-control summary::-webkit-details-marker {
+  display: none;
+}
+.sort-control summary:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 4px;
+}
+.sort-control summary:hover,
+.sort-control[open] summary {
+  color: var(--primary);
+}
+.sort-control[open] summary svg:last-child {
+  transform: rotate(180deg);
+}
+.sort-options {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 180px;
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  box-shadow: 0 12px 30px color-mix(in srgb, var(--shadow) 14%, transparent);
+}
+.sort-options button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 11px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
   color: var(--foreground);
-  max-width: 130px;
+  font-size: 11px;
+  text-align: left;
+}
+.sort-options button:hover {
+  background: var(--accent);
+}
+.sort-options button[aria-pressed="true"] {
+  color: var(--primary);
+  background: var(--secondary-soft);
 }
 .lecture-grid {
   display: grid;
@@ -884,7 +915,6 @@ a svg {
 .lecture-card:hover .card-image img {
   transform: scale(1.045);
 }
-.course-badge,
 .duration-badge {
   position: absolute;
   font-size: 8px;
@@ -894,12 +924,6 @@ a svg {
   align-items: center;
   gap: 4px;
   backdrop-filter: blur(12px);
-}
-.course-badge {
-  top: 12px;
-  left: 12px;
-  background: color-mix(in srgb, var(--card) 78.8%, transparent);
-  color: var(--foreground);
 }
 .duration-badge {
   bottom: 11px;
@@ -2633,7 +2657,6 @@ label small {
   .card-bottom {
     font-size: 9px;
   }
-  .course-badge,
   .duration-badge {
     font-size: 9px;
   }
@@ -2756,13 +2779,6 @@ label small {
   }
   .catalog-controls {
     padding-top: 6px;
-  }
-  .course-tabs {
-    gap: 3px;
-  }
-  .course-tabs button {
-    font-size: 9px;
-    padding: 7px 9px;
   }
   .lecture-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2957,17 +2973,6 @@ label small {
   }
   .catalog-toolbar {
     gap: 7px;
-  }
-  .sort-control > svg {
-    display: none;
-  }
-  .sort-control select {
-    max-width: 110px;
-    font-size: 8px;
-    padding: 6px;
-  }
-  .course-tabs button {
-    font-size: 9px;
   }
   .big-search {
     padding: 9px 10px 9px 13px;
@@ -3268,23 +3273,12 @@ label small {
     border: 0;
     background: none;
   }
-  .course-tabs button {
-    font-size: 9px;
-    padding: 7px 9px;
-  }
   .lecture-grid {
     gap: 12px;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .card-image {
     aspect-ratio: 1.3;
-  }
-  .course-badge {
-    font-size: 6px;
-    padding: 4px 5px;
-    top: 8px;
-    left: 8px;
-    max-width: calc(100% - 16px);
   }
   .duration-badge {
     font-size: 6px;

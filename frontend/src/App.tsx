@@ -635,6 +635,63 @@ export default function App() {
   );
 }
 
+function SortPicker({ value, onChange }: {
+  value: "new" | "title";
+  onChange: (value: "new" | "title") => void;
+}) {
+  const menu = useRef<HTMLDetailsElement>(null);
+  const options = [
+    { value: "new", label: "Сначала новые" },
+    { value: "title", label: "По названию" },
+  ] as const;
+  const label = options.find((option) => option.value === value)!.label;
+  useEffect(() => {
+    const closeOutside = (e: PointerEvent) => {
+      if (menu.current && !menu.current.contains(e.target as Node)) menu.current.open = false;
+    };
+    const closeOnEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && menu.current?.open) {
+        menu.current.open = false;
+        menu.current.querySelector<HTMLElement>("summary")?.focus();
+      }
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, []);
+  return (
+    <details className="sort-control" ref={menu}>
+      <summary aria-label={"Сортировка: " + label}>
+        <SlidersHorizontal size={15} />
+        <span>{label}</span>
+        <ChevronDown size={15} />
+      </summary>
+      <div className="sort-options" aria-label="Варианты сортировки">
+        {options.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            aria-pressed={value === option.value}
+            onClick={() => {
+              onChange(option.value);
+              if (menu.current) {
+                menu.current.open = false;
+                menu.current.querySelector<HTMLElement>("summary")?.focus();
+              }
+            }}
+          >
+            {option.label}
+            {value === option.value && <Check size={15} />}
+          </button>
+        ))}
+      </div>
+    </details>
+  );
+}
+
 function Catalog({
   lectures,
   user,
@@ -647,14 +704,11 @@ function Catalog({
   suggest: () => void;
 }) {
   const [query, setQuery] = useState(""),
-    [course, setCourse] = useState(""),
     [filter, setFilter] = useState(""),
-    [sort, setSort] = useState("new");
-  const courses = [...new Set(lectures.map((l) => l.course).filter(Boolean))];
+    [sort, setSort] = useState<"new" | "title">("new");
   const shown = lectures
     .filter(
       (l) =>
-        (!course || l.course === course) &&
         (!filter ||
           (l.title + " " + l.description)
             .toLowerCase()
@@ -751,23 +805,7 @@ function Catalog({
         </div>
       </div>
       <div className="catalog-toolbar">
-        <div className="course-tabs">
-          <button
-            className={!course ? "selected" : ""}
-            onClick={() => setCourse("")}
-          >
-            Все лекции
-          </button>
-          {courses.map((c) => (
-            <button
-              key={c}
-              className={course === c ? "selected" : ""}
-              onClick={() => setCourse(c!)}
-            >
-              {c}
-            </button>
-          ))}
-        </div>
+        <span className="catalog-all">Все лекции</span>
         <div className="catalog-controls">
           <label className="compact-search">
             <Search size={15} />
@@ -778,17 +816,7 @@ function Catalog({
               onChange={(e) => setFilter(e.target.value)}
             />
           </label>
-          <label className="sort-control">
-            <SlidersHorizontal size={15} />
-            <select
-              aria-label="Сортировка"
-              value={sort}
-              onChange={(e) => setSort(e.target.value)}
-            >
-              <option value="new">Сначала новые</option>
-              <option value="title">По названию</option>
-            </select>
-          </label>
+          <SortPicker value={sort} onChange={setSort} />
         </div>
       </div>
       {shown.length ? (
@@ -804,7 +832,7 @@ function Catalog({
           }
           text={
             lectures.length
-              ? "Попробуйте другое название или выберите все курсы."
+              ? "Попробуйте другое название."
               : user.role === "viewer"
                 ? "Преподаватель ещё не добавил лекции. Предложите видео, которое хотели бы изучить."
                 : "Добавьте первую лекцию: загрузите видео или импортируйте ссылку."
@@ -827,7 +855,6 @@ function LectureCard({ lecture: l }: { lecture: Lecture }) {
     <a className="lecture-card" href={"#/lecture/" + l.id}>
       <div className={"card-image " + l.cover}>
         <img src={coverImage(l.cover)} alt="" loading="lazy" />
-        <span className="course-badge">{l.course || "Свободная тема"}</span>
         <span className="duration-badge">
           <Clock3 size={12} />
           {l.duration ? duration(l.duration) : "Новая лекция"}

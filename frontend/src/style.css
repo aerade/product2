@@ -382,31 +382,31 @@ a svg {
   border: 0;
 }
 .brand {
-  display: inline-flex;
-  align-items: center;
-  font-size: 25px;
-  font-weight: 750;
-  letter-spacing: -0.07em;
-  white-space: nowrap;
+  display: inline-block;
+  width: 100%;
+  max-width: 184px;
+  height: 44px;
+  flex-shrink: 0;
+  mix-blend-mode: multiply;
 }
-.brand-mark {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--primary);
-  color: var(--primary-foreground);
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  margin-right: 10px;
-  transform: rotate(-6deg);
+.brand img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
 }
-.brand-mark svg {
-  transform: rotate(6deg);
+:root[data-theme="dark"] .brand {
+  mix-blend-mode: lighten;
 }
-.brand-dot {
-  color: var(--primary);
-  margin-left: 1px;
+.brand .brand-dark {
+  display: none;
+}
+:root[data-theme="dark"] .brand .brand-light {
+  display: none;
+}
+:root[data-theme="dark"] .brand .brand-dark {
+  display: block;
 }
 .app-shell {
   display: flex;
@@ -2350,6 +2350,8 @@ label small {
 .auth-story > .brand {
   position: relative;
   z-index: 2;
+  max-width: 230px;
+  height: 55px;
 }
 .auth-heading {
   margin-top: 100px;
@@ -3013,12 +3015,8 @@ label small {
     padding: 25px 25px 20px;
   }
   .auth-story > .brand {
-    font-size: 23px;
-  }
-  .auth-story .brand-mark {
-    width: 32px;
-    height: 32px;
-    border-radius: 9px;
+    max-width: 195px;
+    height: 47px;
   }
   .auth-heading {
     margin-top: 30px;

@@ -147,11 +147,21 @@ function Modal({
 }
 function Brand() {
   return (
-    <span className="brand">
-      <span className="brand-mark">
-        <BookOpen size={23} strokeWidth={2.1} />
-      </span>
-      лекторий<span className="brand-dot">.</span>
+    <span className="brand" role="img" aria-label="Лекторий">
+      <img
+        className="brand-light"
+        src="/art/lectory-logo-light.png"
+        alt=""
+        width={2172}
+        height={724}
+      />
+      <img
+        className="brand-dark"
+        src="/art/lectory-logo-dark.png"
+        alt=""
+        width={2172}
+        height={724}
+      />
     </span>
   );
 }

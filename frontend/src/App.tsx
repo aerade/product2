@@ -497,21 +497,6 @@ export default function App() {
           </>
         )}
         <div className="sidebar-bottom">
-          <div className="sidebar-note">
-            <span className="note-symbol">
-              <Sparkles size={22} />
-            </span>
-            <h3>Суть всегда рядом</h3>
-            <p>
-              Спросите своими словами.
-              <br />
-              Мы найдём нужный момент.
-            </p>
-            <button onClick={() => setModal("help")}>
-              Как это работает
-              <ArrowUpRight size={16} />
-            </button>
-          </div>
           <button className="sidebar-help" onClick={() => setModal("help")}>
             <CircleHelp size={18} />О Лектории
             <ArrowUpRight size={15} />
@@ -569,22 +554,12 @@ export default function App() {
           </div>
           <div className="topbar-right">
             <ThemeSwitch />
-            <span className="connection-dot" />
-            Учиться — значит открывать
-            <Avatar n={user.avatar} className="mini-avatar" />
           </div>
         </header>
         <main>
           <ErrorBox message={catalogError} />
           {content}
         </main>
-        <footer className="page-footer">
-          <span>Лекторий · Ваше пространство знаний</span>
-          <span>
-            Создано для любопытных
-            <ArrowUpRight size={12} />
-          </span>
-        </footer>
       </div>
       {toast && (
         <div className="toast" role="status">

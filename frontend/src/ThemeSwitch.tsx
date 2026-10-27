@@ -30,7 +30,6 @@ export default function ThemeSwitch() {
       }}
     >
       {dark ? <Sun size={18} /> : <Moon size={18} />}
-      <span>{dark ? "Светлая тема" : "Тёмная тема"}</span>
     </button>
   );
 }

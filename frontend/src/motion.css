@@ -1,0 +1,79 @@
+:root {
+  --ease-enter: cubic-bezier(.2, .8, .2, 1);
+  --ease-spring: cubic-bezier(.2, 1.35, .35, 1);
+}
+
+:root.theme-changing::view-transition-group(root),
+:root.theme-changing::view-transition-old(root),
+:root.theme-changing::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+:root.theme-changing::view-transition-image-pair(root) { isolation: isolate; }
+:root.theme-changing::view-transition-old(root) { z-index: 1; }
+:root.theme-changing::view-transition-new(root) { z-index: 2; }
+:root.theme-changing *, :root.theme-changing *::before, :root.theme-changing *::after { transition: none !important; animation-play-state: paused !important; }
+:root.theme-fallback,
+:root.theme-fallback :where(body, .sidebar, .topbar, main, .modal, .lecture-card, .card-body, .library-hero, .search-workspace, .search-result, .button, .custom-select, input, textarea, .content-tabs, .admin-stats > div) {
+  transition: background-color 400ms ease, color 400ms ease, border-color 400ms ease, box-shadow 400ms ease;
+}
+.theme-switch { position: relative; transition: background-color 180ms ease, scale 220ms var(--ease-spring); }
+.theme-switch:hover { background: var(--secondary-soft); }
+.theme-switch:disabled { opacity: 1; }
+.theme-glyph { display: block; position: relative; width: 18px; height: 18px; }
+.theme-glyph > svg { position: absolute; inset: 0; transition: opacity 300ms ease, rotate 440ms var(--ease-enter), scale 440ms var(--ease-enter); }
+.theme-glyph .theme-sun { opacity: 0; rotate: -100deg; scale: .5; }
+.theme-glyph .theme-moon { opacity: 1; rotate: 0deg; scale: 1; }
+.theme-switch[aria-pressed="true"] .theme-sun { opacity: 1; rotate: 0deg; scale: 1; }
+.theme-switch[aria-pressed="true"] .theme-moon { opacity: 0; rotate: 100deg; scale: .5; }
+
+.page-scene { min-width: 0; animation: scene-enter 380ms var(--ease-enter) backwards; }
+.page-scene > .page-title { animation: title-enter 420ms var(--ease-enter) backwards; }
+.motion-panel, .settings > form, .settings > .settings-avatar-panel { animation: panel-enter 240ms var(--ease-enter) backwards; }
+.lecture-grid > *, .search-results > *, .saved-list > *, .suggestion-list > *, .admin-lecture-list > *, .scope-results > label {
+  animation: item-enter 380ms var(--ease-enter) backwards;
+}
+:where(.lecture-grid, .search-results, .saved-list, .suggestion-list, .admin-lecture-list, .scope-results) > :nth-child(2) { animation-delay: 35ms; }
+:where(.lecture-grid, .search-results, .saved-list, .suggestion-list, .admin-lecture-list, .scope-results) > :nth-child(3) { animation-delay: 70ms; }
+:where(.lecture-grid, .search-results, .saved-list, .suggestion-list, .admin-lecture-list, .scope-results) > :nth-child(4) { animation-delay: 105ms; }
+:where(.lecture-grid, .search-results, .saved-list, .suggestion-list, .admin-lecture-list, .scope-results) > :nth-child(5) { animation-delay: 140ms; }
+:where(.lecture-grid, .search-results, .saved-list, .suggestion-list, .admin-lecture-list, .scope-results) > :nth-child(6) { animation-delay: 175ms; }
+.users-table tbody tr { animation: soft-reveal 220ms ease backwards; }
+.auth-form { animation: panel-enter 480ms var(--ease-enter) backwards; }
+.auth-art { animation: soft-reveal 700ms ease backwards; }
+.search-intro > .themed-art, .library-hero > .themed-art { animation: art-enter 600ms var(--ease-enter) 90ms backwards; }
+.empty, .error-box, .settings-success { animation: panel-enter 260ms var(--ease-enter) backwards; }
+
+button, .lecture-card, .search-result, .mini-lecture, .saved-item, .suggestion-row, .cover-picker label img, .sidebar nav a {
+  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease, box-shadow 220ms ease, transform 220ms var(--ease-enter), scale 180ms var(--ease-spring);
+}
+button:active:not(:disabled) { scale: .97; }
+.sidebar nav a:active, .lecture-card:active, .search-result:active { scale: .99; }
+.content-tabs button.active::after { transform-origin: left; animation: tab-line 220ms var(--ease-enter) backwards; }
+.cover-picker input:checked + img { animation: selected-pop 260ms var(--ease-spring); }
+.player-action-bar button[aria-pressed="true"] > svg { animation: selected-pop 250ms var(--ease-spring); }
+.settings-avatar-grid button > .user-avatar { transition: scale 220ms var(--ease-spring); }
+.custom-select-menu, .sort-options, .course-options { transform-origin: top; animation: menu-enter 170ms var(--ease-enter) backwards; }
+.modal[open] { animation: dialog-enter 220ms ease backwards; }
+.modal[open]::backdrop { animation: soft-reveal 220ms ease backwards; }
+.modal[open][data-closing="true"] { animation: dialog-exit 170ms ease forwards; }
+.modal[open][data-closing="true"]::backdrop { animation: dialog-exit 170ms ease forwards; }
+@media (hover: hover) {
+  .lecture-card:hover { transform: translateY(-5px); }
+  .mini-lecture:hover, .saved-item:hover { transform: translateY(-2px); }
+  .settings-avatar-grid button:hover > .user-avatar { scale: 1.06; }
+  .cover-picker label:hover img { scale: 1.025; }
+}
+
+@keyframes scene-enter { from { opacity: 0; translate: 0 10px; } to { opacity: 1; translate: 0 0; } }
+@keyframes title-enter { from { opacity: 0; translate: 0 5px; } to { opacity: 1; translate: 0 0; } }
+@keyframes panel-enter { from { opacity: 0; translate: 0 6px; } to { opacity: 1; translate: 0 0; } }
+@keyframes item-enter { from { opacity: 0; translate: 0 10px; } to { opacity: 1; translate: 0 0; } }
+@keyframes art-enter { from { opacity: 0; translate: 0 12px; scale: .98; } to { opacity: 1; translate: 0 0; scale: 1; } }
+@keyframes soft-reveal { from { opacity: 0; } to { opacity: 1; } }
+@keyframes menu-enter { from { opacity: 0; scale: .98; translate: 0 -4px; } to { opacity: 1; scale: 1; translate: 0 0; } }
+@keyframes tab-line { from { scale: 0 1; } to { scale: 1 1; } }
+@keyframes selected-pop { 0% { scale: .9; } 65% { scale: 1.04; } 100% { scale: 1; } }
+@keyframes dialog-enter { from { opacity: 0; } to { opacity: 1; } }
+@keyframes dialog-exit { from { opacity: 1; } to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  ::view-transition-group(root), ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }
+}

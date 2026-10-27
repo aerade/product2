@@ -653,7 +653,6 @@ function Catalog({
     <>
       <div className="page-title">
         <div>
-          <span className="section-label">БОЛЬШЕ, ЧЕМ ПРОСМОТР</span>
           <h1>
             Откройте новое<span className="title-dot">.</span>
           </h1>
@@ -671,10 +670,6 @@ function Catalog({
           alt="Книга и стеклянный символ воспроизведения"
         />
         <div className="hero-content">
-          <span className="hero-kicker">
-            <Sparkles size={15} />
-            ПОИСК, КОТОРЫЙ ПОНИМАЕТ
-          </span>
           <h2>
             Найдите мысль.
             <br />
@@ -718,7 +713,6 @@ function Catalog({
             </button>
           </div>
         </div>
-        <span className="hero-corner">ОТ ВОПРОСА К ПОНИМАНИЮ ↗</span>
       </section>
       <div className="catalog-heading">
         <div>
@@ -896,16 +890,11 @@ function SearchPage({
     <>
       <div className="page-title">
         <div>
-          <span className="section-label">ОТ ВОПРОСА К ПОНИМАНИЮ</span>
           <h1>
             Поиск по смыслу<span className="title-dot">.</span>
           </h1>
           <p>Не нужно помнить точные слова. Достаточно вашей мысли.</p>
         </div>
-        <span className="subtle-label">
-          <Sparkles size={17} />
-          Многоязычная модель E5
-        </span>
       </div>
       <div className="search-workspace">
         <form
@@ -947,7 +936,6 @@ function SearchPage({
               : "По всему каталогу"}
             <ChevronDown size={15} />
           </button>
-          <span>Результаты ведут к точному моменту видео</span>
         </div>
         {filterOpen && (
           <div className="lecture-picker">
@@ -1033,7 +1021,6 @@ function SearchPage({
         <div className="search-intro">
           <img src={art("ai")} alt="Объёмная модель сети связанных идей" />
           <div>
-            <span className="section-label">СВЯЗЫВАЙТЕ ИДЕИ</span>
             <h2>
               Один вопрос.
               <br />
@@ -1768,7 +1755,6 @@ function LibraryPage({ notify }: { notify: (m: string) => void }) {
     <>
       <div className="page-title">
         <div>
-          <span className="section-label">ВАШИ ЛИЧНЫЕ ОТКРЫТИЯ</span>
           <h1>
             Сохраните главное<span className="title-dot">.</span>
           </h1>

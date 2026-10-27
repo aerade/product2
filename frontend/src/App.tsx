@@ -40,7 +40,6 @@ import {
   ListVideo,
   Send,
   GraduationCap,
-  Layers3,
   ExternalLink,
 } from "lucide-react";
 import {
@@ -117,11 +116,13 @@ function Modal({
   children,
   onClose,
   wide = false,
+  className = "",
 }: {
   title: string;
   children: ReactNode;
   onClose: () => void;
   wide?: boolean;
+  className?: string;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -132,7 +133,7 @@ function Modal({
   return (
     <dialog
       ref={dialog}
-      className={"modal " + (wide ? "wide" : "")}
+      className={"modal " + (wide ? "wide " : "") + className}
       onCancel={onClose}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -582,7 +583,7 @@ export default function App() {
         <SuggestModal onClose={() => setModal(null)} notify={notify} />
       )}
       {modal === "settings" && (
-        <Modal title="Настройки профиля" onClose={() => setModal(null)} wide>
+        <Modal title="Настройки профиля" onClose={() => setModal(null)} wide className="settings-modal">
           <Settings
             user={user}
             onChange={(updated) => {
@@ -812,22 +813,6 @@ function Catalog({
           </button>
         </Empty>
       )}
-      <section className="bottom-banner">
-        <div className="banner-icon">
-          <Layers3 size={24} />
-        </div>
-        <div>
-          <h3>Большая лекция. Точный ответ.</h3>
-          <p>
-            Ищите сразу по нескольким лекциям — пусть связи между идеями станут
-            заметнее.
-          </p>
-        </div>
-        <a href="#/search">
-          Перейти к поиску
-          <ArrowUpRight size={18} />
-        </a>
-      </section>
     </>
   );
 }

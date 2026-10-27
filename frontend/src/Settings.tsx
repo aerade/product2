@@ -166,10 +166,10 @@ export default function Settings({ user, onChange }: {
         </form>
       )}
       {tab === "avatar" && (
-        <form onSubmit={saveAvatar} aria-busy={busy === "avatar"}>
+        <form className="settings-avatar-form" onSubmit={saveAvatar} aria-busy={busy === "avatar"}>
           <div className="settings-avatar-preview">
             <Avatar n={selected} src={custom ? user.avatar_url : null} className="settings-preview-avatar" />
-            <div><strong>Ваша аватарка</strong><p>Выберите персонажа из коллекции или загрузите свою фотографию.</p></div>
+            <div><strong>Ваша аватарка</strong><p>Выберите персонажа или загрузите свою фотографию.</p></div>
           </div>
           <div className="settings-avatar-grid" aria-label="Коллекция аватарок">
             {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
@@ -212,7 +212,7 @@ export default function Settings({ user, onChange }: {
               <Shuffle size={16} />Выбрать случайную
             </button>
           </div>
-          <p className="settings-hint">JPG, PNG или WebP, до 5 МБ и 16 мегапикселей. Картинка будет обрезана до квадрата и сохранится сразу после загрузки.</p>
+          <p className="settings-hint">JPG, PNG, WebP · до 5 МБ. Квадратная обрезка, сохранение сразу.</p>
           <button className="button primary" type="submit" disabled={!!busy || custom || (selected === user.avatar && !user.avatar_url)}>
             Сохранить выбранную аватарку
           </button>

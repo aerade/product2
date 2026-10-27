@@ -39,7 +39,6 @@ import {
   CircleHelp,
   ListVideo,
   Send,
-  GraduationCap,
   ExternalLink,
 } from "lucide-react";
 import {
@@ -48,6 +47,7 @@ import {
   ApiError,
   timecode,
   duration,
+  coverImage,
   roleLabel,
   statusLabel,
   type User,
@@ -61,6 +61,7 @@ import Player, { type PlayerHandle } from "./Player";
 import ThemeSwitch from "./ThemeSwitch";
 import Avatar from "./Avatar";
 import Settings from "./Settings";
+import CoverPicker from "./CoverPicker";
 
 const art = (name: string) => "/art/" + name + ".webp";
 const plural = (n: number, forms: string[]) =>
@@ -681,9 +682,14 @@ function Catalog({
       </div>
       <section className="hero">
         <img
-          className="hero-art"
-          src={art("hero")}
-          alt="Книга и стеклянный символ воспроизведения"
+          className="hero-art hero-art-light"
+          src="/art/catalog-hero-light.png"
+          alt=""
+        />
+        <img
+          className="hero-art hero-art-dark"
+          src="/art/catalog-hero-dark.png"
+          alt=""
         />
         <div className="hero-content">
           <h2>
@@ -820,7 +826,7 @@ function LectureCard({ lecture: l }: { lecture: Lecture }) {
   return (
     <a className="lecture-card" href={"#/lecture/" + l.id}>
       <div className={"card-image " + l.cover}>
-        <img src={art(l.cover)} alt="" loading="lazy" />
+        <img src={coverImage(l.cover)} alt="" loading="lazy" />
         <span className="course-badge">{l.course || "Свободная тема"}</span>
         <span className="duration-badge">
           <Clock3 size={12} />
@@ -994,7 +1000,7 @@ function SearchPage({
                   key={hit.id}
                   href={`#/lecture/${hit.lecture_id}?t=${hit.start_seconds}`}
                 >
-                  <img src={art(hit.cover)} alt="" />
+                  <img src={coverImage(hit.cover)} alt="" />
                   <div>
                     <span className="result-lecture">{hit.title}</span>
                     <h3>
@@ -1847,7 +1853,7 @@ function LibraryPage({ notify }: { notify: (m: string) => void }) {
           {items.map((item) => (
             <article className="saved-item" key={item.id}>
               <a href={`#/lecture/${item.lecture_id}?t=${item.seconds}`}>
-                <img src={art(item.cover)} alt="" />
+                <img src={coverImage(item.cover)} alt="" />
               </a>
               <div>
                 <a
@@ -1981,6 +1987,7 @@ function UploadPage({
     [file, setFile] = useState<File | null>(null),
     [subtitles, setSubtitles] = useState<File | null>(null),
     [cover, setCover] = useState("math"),
+    [coverBusy, setCoverBusy] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const mine = lectures.filter((l) => l.owner_id === user.id);
@@ -1988,16 +1995,11 @@ function UploadPage({
     <>
       <div className="page-title">
         <div>
-          <span className="section-label">ДЕЛИТЕСЬ ЗНАНИЯМИ</span>
           <h1>
             Мои лекции<span className="title-dot">.</span>
           </h1>
           <p>Добавьте видео. Мы поможем другим найти в нём главное.</p>
         </div>
-        <span className="subtle-label">
-          <GraduationCap size={19} />
-          {roleLabel[user.role]}
-        </span>
       </div>
       <div className="upload-layout">
         <section className="form-panel">
@@ -2133,27 +2135,7 @@ function UploadPage({
                 ))}
               </datalist>
             </label>
-            <fieldset className="cover-picker">
-              <legend>Визуальная тема</legend>
-              {[
-                ["math", "Математика"],
-                ["ai", "Технологии"],
-                ["physics", "Физика"],
-                ["biology", "Биология"],
-              ].map(([key, label]) => (
-                <label key={key} className={cover === key ? "selected" : ""}>
-                  <input
-                    type="radio"
-                    name="visual-theme"
-                    value={key}
-                    checked={cover === key}
-                    onChange={() => setCover(key)}
-                  />
-                  <img src={art(key)} alt={label} />
-                  <span>{label}</span>
-                </label>
-              ))}
-            </fieldset>
+            <CoverPicker value={cover} onChange={setCover} disabled={busy} onBusyChange={setCoverBusy} />
             {mode === "upload" && (
               <label className="subtitle-upload">
                 <FileText size={18} />
@@ -2172,7 +2154,7 @@ function UploadPage({
               </label>
             )}
             <ErrorBox message={error} />
-            <button className="button primary full" disabled={busy}>
+            <button className="button primary full" disabled={busy || coverBusy}>
               {busy ? (
                 <>
                   <Loader2 className="spin" size={18} />
@@ -2198,7 +2180,7 @@ function UploadPage({
           {mine.length ? (
             mine.map((l) => (
               <a className="mini-lecture" href={"#/lecture/" + l.id} key={l.id}>
-                <img src={art(l.cover)} alt="" />
+                <img src={coverImage(l.cover)} alt="" />
                 <div>
                   <strong>{l.title}</strong>
                   <span>
@@ -2244,6 +2226,8 @@ function EditLectureModal({
   notify: (m: string) => void;
 }) {
   const [error, setError] = useState(""),
+    [cover, setCover] = useState(lecture.cover),
+    [coverBusy, setCoverBusy] = useState(false),
     [busy, setBusy] = useState(false);
   return (
     <Modal title="Настройки лекции" onClose={onClose}>
@@ -2255,7 +2239,7 @@ function EditLectureModal({
           try {
             await api("/lectures/" + lecture.id, {
               method: "PATCH",
-              body: json(Object.fromEntries(fd)),
+              body: json({ ...Object.fromEntries(fd), cover }),
             });
             onSaved();
             notify("Изменения сохранены");
@@ -2295,7 +2279,8 @@ function EditLectureModal({
           />
         </label>
         <ErrorBox message={error} />
-        <button className="button primary full" disabled={busy}>
+        <CoverPicker value={cover} onChange={setCover} disabled={busy} onBusyChange={setCoverBusy} />
+        <button className="button primary full" disabled={busy || coverBusy}>
           Сохранить изменения
           <Check size={17} />
         </button>
@@ -2390,7 +2375,6 @@ function AdminPage({
     <>
       <div className="page-title">
         <div>
-          <span className="section-label">ПОРЯДОК В ПРОСТРАНСТВЕ</span>
           <h1>
             Администрирование<span className="title-dot">.</span>
           </h1>
@@ -2553,7 +2537,7 @@ function AdminPage({
         <div className="admin-lecture-list">
           {lectures.map((l) => (
             <a className="mini-lecture" href={"#/lecture/" + l.id} key={l.id}>
-              <img src={art(l.cover)} alt="" />
+              <img src={coverImage(l.cover)} alt="" />
               <div>
                 <strong>{l.title}</strong>
                 <span>

@@ -40,6 +40,17 @@ export async function api<T = Record<string, unknown>>(
   return response.status === 204 ? (undefined as T) : response.json();
 }
 export const json = (data: unknown) => JSON.stringify(data);
+export type CoverChoice = { key: string; title: string; url: string };
+export const presetCovers: CoverChoice[] = [
+  { key: "math", title: "Орбиты", url: "/art/cover-orbits.png" },
+  { key: "ai", title: "Поток", url: "/art/cover-flow.png" },
+  { key: "physics", title: "Диалог", url: "/art/cover-dialogue.png" },
+  { key: "biology", title: "Равновесие", url: "/art/cover-balance.png" },
+];
+export const coverImage = (key: string) =>
+  /^custom:[0-9a-f]{32}$/.test(key)
+    ? "/api/covers/" + key.slice(7)
+    : (presetCovers.find((cover) => cover.key === key) || presetCovers[0]).url;
 export type User = {
   id: string;
   name: string;

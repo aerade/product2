@@ -6,7 +6,7 @@ import {
   useImperativeHandle,
 } from "react";
 import VimeoPlayer from "@vimeo/player";
-import type { Lecture } from "./api";
+import { coverImage, type Lecture } from "./api";
 declare global {
   interface Window {
     onYouTubeIframeAPIReady: () => void;
@@ -143,7 +143,7 @@ const Player = forwardRef<
           ref={video}
           controls
           preload="metadata"
-          poster={"/art/" + lecture.cover + ".webp"}
+          poster={coverImage(lecture.cover)}
           src={"/api/lectures/" + lecture.id + "/media"}
           onLoadedMetadata={() => {
             if (video.current) video.current.currentTime = start;

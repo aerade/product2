@@ -7,8 +7,9 @@ load_dotenv(ROOT / '.env', encoding='utf-8-sig')
 DATA = Path(os.getenv('DATA_DIR', str(ROOT / 'data'))).resolve()
 MEDIA = DATA / 'media'
 AVATARS = DATA / 'avatars'
+COVERS = DATA / 'covers'
 MODELS = DATA / 'models'
-for directory in (DATA, MEDIA, AVATARS, MODELS):
+for directory in (DATA, MEDIA, AVATARS, COVERS, MODELS):
     directory.mkdir(parents=True, exist_ok=True)
 DB_PATH = DATA / 'lectory.sqlite3'
 MAX_UPLOAD = int(os.getenv('MAX_UPLOAD_MB', '500')) * 1024 * 1024

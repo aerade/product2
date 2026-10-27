@@ -612,11 +612,12 @@ a svg {
   display: none;
 }
 .hero {
+  --hero-background: var(--muted);
   min-height: 322px;
   border-radius: 14px;
   position: relative;
   overflow: hidden;
-  background: var(--muted);
+  background: var(--hero-background);
   border: 1px solid var(--border);
 }
 .hero-art {
@@ -629,15 +630,27 @@ a svg {
   left: 0;
   z-index: 0;
 }
+.hero-art-dark {
+  display: none;
+}
+:root[data-theme="dark"] .hero {
+  --hero-background: var(--background);
+}
+:root[data-theme="dark"] .hero-art-light {
+  display: none;
+}
+:root[data-theme="dark"] .hero-art-dark {
+  display: block;
+}
 .hero:after {
   content: "";
   position: absolute;
   inset: 0;
   background: linear-gradient(
     90deg,
-    var(--muted) 0%,
-    color-mix(in srgb, var(--muted) 96.9%, transparent) 26%,
-    color-mix(in srgb, var(--muted) 59.6%, transparent) 45%,
+    var(--hero-background) 0%,
+    color-mix(in srgb, var(--hero-background) 96.9%, transparent) 26%,
+    color-mix(in srgb, var(--hero-background) 59.6%, transparent) 45%,
     transparent 65%
   );
   pointer-events: none;
@@ -1825,13 +1838,13 @@ label small {
 .settings-avatar-preview {
   display: flex;
   align-items: center;
-  gap: 18px;
-  margin-bottom: 22px;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 .settings-preview-avatar {
   display: block;
-  width: 88px;
-  height: 88px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   background: var(--muted);
 }
@@ -1844,14 +1857,18 @@ label small {
 .settings-avatar-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 10px;
+  max-width: 340px;
+  gap: 7px;
 }
 .settings-avatar-grid > button {
   position: relative;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
   aspect-ratio: 1;
-  padding: 3px;
+  padding: 2px;
   border: 2px solid transparent;
-  border-radius: 15px;
+  border-radius: 12px;
   background: transparent;
 }
 .settings-avatar-grid > button:hover {
@@ -1862,19 +1879,21 @@ label small {
 }
 .settings-choice-avatar {
   display: block;
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  inset: 3px;
+  width: auto;
+  height: auto;
   border-radius: 10px;
 }
 .settings-avatar-check {
   position: absolute;
-  bottom: 7px;
-  right: 7px;
+  bottom: 3px;
+  right: 3px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background: var(--primary);
   color: var(--primary-foreground);
@@ -1882,15 +1901,26 @@ label small {
 .settings-avatar-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 20px;
+  gap: 8px;
+  margin-top: 12px;
+}
+.modal .settings-avatar-form {
+  margin-top: 12px;
+}
+.settings-avatar-form .settings-hint {
+  margin: 10px 0 14px;
+  font-size: 10px;
+}
+.settings-avatar-actions .button {
+  padding: 10px;
+  font-size: 10px;
 }
 @media (max-width: 480px) {
   .settings-account {
     flex-wrap: wrap;
   }
   .settings-account > .badge {
-    margin-left: 70px;
+    margin-left: 0;
   }
   .settings-avatar-grid {
     gap: 4px;
@@ -1902,7 +1932,9 @@ label small {
     height: 18px;
   }
   .settings-avatar-actions .button {
-    width: 100%;
+    flex: 1;
+    padding: 10px 8px;
+    gap: 6px;
   }
 }
 .help-steps > div {
@@ -2179,7 +2211,8 @@ label small {
   border: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  min-width: 0;
   gap: 9px;
 }
 .cover-picker legend {
@@ -2190,6 +2223,7 @@ label small {
   margin-bottom: 13px;
 }
 .cover-picker label {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 7px;
@@ -2202,7 +2236,7 @@ label small {
 }
 .cover-picker img {
   width: 100%;
-  aspect-ratio: 1.3;
+  aspect-ratio: 16 / 9;
   object-fit: cover;
   border-radius: 7px;
   border: 2px solid transparent;
@@ -2216,13 +2250,22 @@ label small {
   outline-offset: 3px;
 }
 .cover-picker label > span {
-  font-size: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
   text-align: center;
   color: var(--foreground);
 }
 .cover-picker .selected > span {
   color: var(--primary);
   font-weight: 700;
+}
+.cover-hint {
+  font-size: 10px;
+  line-height: 1.7;
+  color: var(--muted-foreground);
+  margin: 10px 0 16px;
 }
 .subtitle-upload {
   display: flex;
@@ -3177,7 +3220,7 @@ label small {
     opacity: 0.5;
   }
   .hero:after {
-    background: linear-gradient(90deg, color-mix(in srgb, var(--muted) 96.1%, transparent), color-mix(in srgb, var(--muted) 81.2%, transparent) 55%, color-mix(in srgb, var(--muted) 43.9%, transparent));
+    background: linear-gradient(90deg, color-mix(in srgb, var(--hero-background) 96.1%, transparent), color-mix(in srgb, var(--hero-background) 81.2%, transparent) 55%, color-mix(in srgb, var(--hero-background) 43.9%, transparent));
   }
   .hero-content > p {
     margin-top: 17px;
@@ -3513,7 +3556,7 @@ label small {
     padding: 20px 17px;
   }
   .cover-picker label > span {
-    font-size: 7px;
+    font-size: 9px;
   }
   .subtitle-upload > span {
     font-size: 8px;
@@ -3661,10 +3704,10 @@ input:-webkit-autofill:focus {
 }
 ::selection { background: var(--primary); color: var(--primary-foreground); }
 html { scrollbar-color: var(--secondary) var(--background); }
-:is(.hero-art, .library-hero > img) {
+.library-hero > img {
   filter: grayscale(.85);
 }
-:root[data-theme="dark"] :is(.hero-art, .library-hero > img) {
+:root[data-theme="dark"] .library-hero > img {
   filter: brightness(.55) grayscale(.85);
 }
 @media (max-width: 760px) {

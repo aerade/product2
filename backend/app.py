@@ -5,17 +5,15 @@ import secrets
 import shutil
 import sqlite3
 import time
-from io import BytesIO
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Annotated, Literal
-from uuid import uuid4
 from fastapi import FastAPI, Depends, HTTPException, Request, Response, UploadFile, File, Form
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, StringConstraints, field_validator
-from PIL import Image, ImageOps, UnidentifiedImageError
-from .config import ROOT, MEDIA, AVATARS, MAX_UPLOAD, ORIGIN, COOKIE_SECURE, SESSION_DAYS
+from .config import ROOT, MEDIA, AVATARS, COVERS, MAX_UPLOAD, ORIGIN, COOKIE_SECURE, SESSION_DAYS
+from .images import save_image
 from .db import db, init_db
 from .security import current_user, public_user, hash_password, verify_password, require_teacher, require_admin, lecture_access, rate_limit
 from .processing import validate_source, uid, parse_subtitles, call_llm, llm_configured
@@ -178,30 +176,11 @@ def choose_avatar(data: AvatarChoice, user: User):
 @app.post('/api/auth/avatar')
 def upload_avatar(user: User, file: UploadFile = File()):
     rate_limit('avatar:' + user['id'], 20)
-    maximum = 5 * 1024 * 1024
+    path = save_image(file, AVATARS, (512, 512))
     try:
-        data = file.file.read(maximum + 1)
-    finally:
-        file.file.close()
-    if len(data) > maximum:
-        raise HTTPException(413, 'Выберите изображение размером до 5 МБ.')
-    filename = uuid4().hex + '.webp'
-    path = AVATARS / filename
-    try:
-        try:
-            with Image.open(BytesIO(data)) as image:
-                if image.format not in ('JPEG', 'PNG', 'WEBP'):
-                    raise HTTPException(422, 'Поддерживаются изображения JPG, PNG и WebP.')
-                if image.width * image.height > 16_000_000:
-                    raise HTTPException(422, 'Выберите изображение размером до 16 мегапикселей.')
-                square = ImageOps.fit(ImageOps.exif_transpose(image).convert('RGBA'), (512, 512), method=Image.Resampling.LANCZOS)
-                square.info.clear()
-                square.save(path, 'WEBP', quality=90, method=4)
-        except (UnidentifiedImageError, OSError, ValueError, SyntaxError, Image.DecompressionBombError) as exc:
-            raise HTTPException(422, 'Не удалось открыть изображение. Выберите другой JPG, PNG или WebP.') from exc
-        return replace_avatar(user['id'], filename=filename)
+        return replace_avatar(user['id'], filename=path.name)
     except BaseException:
-        remove_avatar_file(filename)
+        remove_avatar_file(path.name)
         raise
 
 @app.get('/api/avatars/{filename}')
@@ -214,6 +193,48 @@ def avatar_image(filename: str, user: User):
     if not exists or not path.is_file():
         raise HTTPException(404, 'Аватарка не найдена.')
     return FileResponse(path, media_type='image/webp')
+
+def cover_info(row):
+    return {'key': 'custom:' + row['id'], 'title': row['title'], 'url': '/api/covers/' + row['id']}
+
+@app.get('/api/covers')
+def custom_covers(user: User):
+    require_teacher(user)
+    with db() as conn:
+        return [cover_info(row) for row in conn.execute('SELECT * FROM lecture_covers WHERE user_id=? ORDER BY created_at DESC,rowid DESC', (user['id'],))]
+
+@app.post('/api/covers', status_code=201)
+def upload_cover(user: User, file: UploadFile = File()):
+    require_teacher(user)
+    rate_limit('cover:' + user['id'], 20)
+    title = Path(file.filename or 'Моя обложка').stem.strip()[:80] or 'Моя обложка'
+    path = save_image(file, COVERS, (1280, 720))
+    try:
+        with db() as conn:
+            conn.execute('INSERT INTO lecture_covers(id,user_id,title) VALUES(?,?,?)', (path.stem, user['id'], title))
+    except BaseException:
+        path.unlink(missing_ok=True)
+        raise
+    return cover_info({'id': path.stem, 'title': title})
+
+@app.get('/api/covers/{cover_id}')
+def cover_image(cover_id: str, user: User):
+    if not re.fullmatch(r'[0-9a-f]{32}', cover_id):
+        raise HTTPException(404, 'Обложка не найдена.')
+    with db() as conn:
+        row = conn.execute('SELECT user_id FROM lecture_covers WHERE id=?', (cover_id,)).fetchone()
+        visible = row and (row['user_id'] == user['id'] or user['role'] == 'admin' or conn.execute("SELECT 1 FROM lectures WHERE cover=? AND status='ready'", ('custom:' + cover_id,)).fetchone())
+    path = COVERS / (cover_id + '.webp')
+    if not visible or not path.is_file():
+        raise HTTPException(404, 'Обложка не найдена.')
+    return FileResponse(path, media_type='image/webp')
+
+def validate_cover(conn, cover, user_id):
+    if cover in ('math', 'ai', 'physics', 'biology'):
+        return
+    match = re.fullmatch(r'custom:([0-9a-f]{32})', cover)
+    if not match or not conn.execute('SELECT 1 FROM lecture_covers WHERE id=? AND user_id=?', (match.group(1), user_id)).fetchone():
+        raise HTTPException(422, 'Выберите готовую обложку или загрузите свою.')
 
 @app.get('/api/health')
 def health():
@@ -285,8 +306,10 @@ async def save_upload(upload, folder, subtitles=False):
         await upload.close()
 
 @app.post('/api/lectures/upload', status_code=201)
-async def upload_lecture(user: User, title: str = Form(min_length=2, max_length=200), description: str = Form(default='', max_length=5000), course: str = Form(default='', max_length=160), cover: Literal['math','ai','physics','biology'] = Form(default='math'), video: UploadFile = File(), subtitles: UploadFile | None = File(default=None)):
+async def upload_lecture(user: User, title: str = Form(min_length=2, max_length=200), description: str = Form(default='', max_length=5000), course: str = Form(default='', max_length=160), cover: str = Form(default='math', max_length=80), video: UploadFile = File(), subtitles: UploadFile | None = File(default=None)):
     require_teacher(user)
+    with db() as conn:
+        validate_cover(conn, cover, user['id'])
     lecture_id = uid()
     folder = MEDIA / lecture_id
     try:
@@ -305,9 +328,10 @@ class ImportLecture(BaseModel):
     title: str = Field(min_length=2, max_length=200)
     description: str = Field(default='', max_length=5000)
     course: str = Field(default='', max_length=160)
-    cover: Literal['math','ai','physics','biology'] = 'ai'
+    cover: str = Field(default='ai', max_length=80)
 
 def add_import(conn, data, owner_id):
+    validate_cover(conn, data.cover, owner_id)
     try:
         source, external_id, url = validate_source(data.url)
     except ValueError as exc:
@@ -353,12 +377,16 @@ class LectureEdit(BaseModel):
     title: str = Field(min_length=2, max_length=200)
     description: str = Field(default='', max_length=5000)
     course: str = Field(default='', max_length=160)
+    cover: str | None = Field(default=None, max_length=80)
 
 @app.patch('/api/lectures/{lecture_id}')
 def edit_lecture(lecture_id: str, data: LectureEdit, user: User):
     with db() as conn:
-        lecture_access(conn, lecture_id, user, edit=True)
-        conn.execute('UPDATE lectures SET title=?,description=?,course_id=? WHERE id=?', (data.title, data.description, course_id(conn, data.course), lecture_id))
+        lecture = lecture_access(conn, lecture_id, user, edit=True)
+        cover = data.cover if data.cover is not None else lecture['cover']
+        if cover != lecture['cover']:
+            validate_cover(conn, cover, user['id'])
+        conn.execute('UPDATE lectures SET title=?,description=?,course_id=?,cover=? WHERE id=?', (data.title, data.description, course_id(conn, data.course), cover, lecture_id))
     return {'ok': True}
 
 @app.delete('/api/lectures/{lecture_id}', status_code=204)

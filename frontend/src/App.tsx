@@ -193,39 +193,16 @@ function Auth({ onLogin }: { onLogin: (u: User) => void }) {
     <div className="auth-page">
       <div className="auth-story">
         <Brand />
-        <div className="auth-heading">
-          <span className="eyebrow">
-            <span className="tiny-dot" />
-            ВАШЕ ПРОСТРАНСТВО ЗНАНИЙ
-          </span>
-          <h1>
-            У каждой мысли
-            <br />
-            есть свой момент.
-          </h1>
-          <p>
-            Найдите его в лекции.
-            <br />И откройте что-то большее.
-          </p>
-        </div>
         <img
           src={art("hero")}
           alt="Объёмная книга с символом воспроизведения и орбитой видео"
         />
-        <div className="auth-footer">
-          <span>Смотрите. Находите. Понимайте.</span>
-          <span>Киберрывок 2026 ↗</span>
-        </div>
       </div>
       <div className="auth-form-wrap">
         <div className="auth-theme">
           <ThemeSwitch />
         </div>
-        <span className="auth-small">
-          Видеолекции, которые легко исследовать
-        </span>
         <div className="auth-form">
-          <span className="section-label">НАЧНИТЕ С ГЛАВНОГО</span>
           <h2>
             {register ? "Создайте свой аккаунт" : "Рады видеть вас снова"}
           </h2>

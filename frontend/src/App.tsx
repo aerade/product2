@@ -58,6 +58,7 @@ import {
   type Suggestion,
 } from "./api";
 import Player, { type PlayerHandle } from "./Player";
+import ThemeSwitch from "./ThemeSwitch";
 
 const art = (name: string) => "/art/" + name + ".webp";
 const plural = (n: number, forms: string[]) =>
@@ -206,6 +207,9 @@ function Auth({ onLogin }: { onLogin: (u: User) => void }) {
         </div>
       </div>
       <div className="auth-form-wrap">
+        <div className="auth-theme">
+          <ThemeSwitch />
+        </div>
         <span className="auth-small">
           Видеолекции, которые легко исследовать
         </span>
@@ -553,6 +557,7 @@ export default function App() {
             </span>
           </div>
           <div className="topbar-right">
+            <ThemeSwitch />
             <span className="connection-dot" />
             Учиться — значит открывать
             <span className="mini-avatar">{user.name.charAt(0)}</span>

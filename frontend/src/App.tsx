@@ -20,6 +20,7 @@ import {
   Plus,
   X,
   LogOut,
+  Settings as SettingsIcon,
   ChevronDown,
   ChevronRight,
   Clock3,
@@ -60,6 +61,7 @@ import {
 import Player, { type PlayerHandle } from "./Player";
 import ThemeSwitch from "./ThemeSwitch";
 import Avatar from "./Avatar";
+import Settings from "./Settings";
 
 const art = (name: string) => "/art/" + name + ".webp";
 const plural = (n: number, forms: string[]) =>
@@ -302,7 +304,7 @@ export default function App() {
     [catalogError, setCatalogError] = useState(""),
     [revision, setRevision] = useState(0),
     [mobile, setMobile] = useState(false),
-    [modal, setModal] = useState<"suggest" | "help" | null>(null),
+    [modal, setModal] = useState<"suggest" | "help" | "settings" | null>(null),
     [toast, setToast] = useState(""),
     [searchText, setSearchText] = useState("");
   function notify(message: string) {
@@ -326,6 +328,7 @@ export default function App() {
     };
     window.addEventListener("hashchange", change);
     const expired = () => {
+      setModal(null);
       setUser(null);
       setLectures([]);
     };
@@ -491,11 +494,22 @@ export default function App() {
             <ArrowUpRight size={15} />
           </button>
           <div className="profile">
-            <Avatar n={user.avatar} />
+            <Avatar n={user.avatar} src={user.avatar_url} />
             <div>
               <strong>{user.name}</strong>
               <small>{roleLabel[user.role]}</small>
             </div>
+            <button
+              className="icon-button"
+              aria-label="Настройки профиля"
+              title="Настройки профиля"
+              onClick={() => {
+                setMobile(false);
+                setModal("settings");
+              }}
+            >
+              <SettingsIcon size={17} />
+            </button>
             <button
               className="icon-button"
               aria-label="Выйти"
@@ -503,6 +517,7 @@ export default function App() {
               onClick={async () => {
                 try {
                   await api("/auth/logout", { method: "POST" });
+                  setModal(null);
                   setUser(null);
                   setLectures([]);
                 } catch (e) {
@@ -565,6 +580,17 @@ export default function App() {
       )}
       {modal === "suggest" && (
         <SuggestModal onClose={() => setModal(null)} notify={notify} />
+      )}
+      {modal === "settings" && (
+        <Modal title="Настройки профиля" onClose={() => setModal(null)} wide>
+          <Settings
+            user={user}
+            onChange={(updated) => {
+              setUser((current) => current?.id === updated.id ? updated : current);
+              refresh();
+            }}
+          />
+        </Modal>
       )}
       {modal === "help" && (
         <Modal title="Знания по вашему запросу" onClose={() => setModal(null)}>
@@ -828,7 +854,7 @@ function LectureCard({ lecture: l }: { lecture: Lecture }) {
         <h3>{l.title}</h3>
         <p>{l.description}</p>
         <div className="card-bottom">
-          <Avatar n={l.author_avatar} className="author-avatar" />
+          <Avatar n={l.author_avatar} src={l.author_avatar_url} className="author-avatar" />
           <span>{l.author}</span>
           <ArrowUpRight size={19} />
         </div>
@@ -1161,8 +1187,12 @@ function LecturePage({
           </span>
           <h1>{lecture.title}</h1>
           <div className="lecture-byline">
-            <Avatar n={lecture.author_avatar} className="author-avatar" />
-            {lecture.author}
+            <Avatar
+              n={lecture.owner_id === user.id ? user.avatar : lecture.author_avatar}
+              src={lecture.owner_id === user.id ? user.avatar_url : lecture.author_avatar_url}
+              className="author-avatar"
+            />
+            {lecture.owner_id === user.id ? user.name : lecture.author}
             <span>·</span>
             <Clock3 size={14} />
             {duration(lecture.duration)}
@@ -2350,7 +2380,7 @@ function AdminPage({
       .then(setData)
       .catch((e) => setError(e.message));
   }
-  useEffect(load, []);
+  useEffect(load, [user]);
   async function review(id: string, status: string, reason = "") {
     setBusy(id);
     try {
@@ -2494,7 +2524,7 @@ function AdminPage({
               {data.users.map((u) => (
                 <tr key={u.id}>
                   <td>
-                    <Avatar n={u.avatar} className="author-avatar" />
+                    <Avatar n={u.avatar} src={u.avatar_url} className="author-avatar" />
                     <strong>{u.name}</strong>
                     {u.id === user.id && <small>Это вы</small>}
                   </td>

@@ -1,15 +1,26 @@
+import { useState } from "react";
+
 export default function Avatar({
   n,
+  src,
   className = "avatar",
 }: {
   n: number;
+  src?: string | null;
   className?: string;
 }) {
-  const src = "/art/avatars/avatar-" + String(n).padStart(2, "0");
+  const [failed, setFailed] = useState<string | null>(null);
+  const base = "/art/avatars/avatar-" + String(n).padStart(2, "0");
   return (
     <span className={"user-avatar " + className} aria-hidden="true">
-      <img className="avatar-light" src={src + "-light.png"} alt="" />
-      <img className="avatar-dark" src={src + "-dark.png"} alt="" />
+      {src && failed !== src ? (
+        <img src={src} alt="" onError={() => setFailed(src)} />
+      ) : (
+        <>
+          <img className="avatar-light" src={base + "-light.png"} alt="" />
+          <img className="avatar-dark" src={base + "-dark.png"} alt="" />
+        </>
+      )}
     </span>
   );
 }

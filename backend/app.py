@@ -5,6 +5,7 @@ import secrets
 import shutil
 import sqlite3
 import time
+from io import BytesIO
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Annotated, Literal
@@ -12,10 +13,11 @@ from uuid import uuid4
 from fastapi import FastAPI, Depends, HTTPException, Request, Response, UploadFile, File, Form
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field, field_validator
-from .config import ROOT, MEDIA, MAX_UPLOAD, ORIGIN, COOKIE_SECURE, SESSION_DAYS
+from pydantic import BaseModel, Field, StringConstraints, field_validator
+from PIL import Image, ImageOps, UnidentifiedImageError
+from .config import ROOT, MEDIA, AVATARS, MAX_UPLOAD, ORIGIN, COOKIE_SECURE, SESSION_DAYS
 from .db import db, init_db
-from .security import current_user, hash_password, verify_password, require_teacher, require_admin, lecture_access, rate_limit
+from .security import current_user, public_user, hash_password, verify_password, require_teacher, require_admin, lecture_access, rate_limit
 from .processing import validate_source, uid, parse_subtitles, call_llm, llm_configured
 from .search import search
 
@@ -82,7 +84,7 @@ def register(data: Registration, request: Request, response: Response):
     except sqlite3.IntegrityError:
         raise HTTPException(409, 'Этот адрес уже зарегистрирован. Войдите в аккаунт.')
     set_session(response, user_id)
-    return {'id': user_id, 'email': data.email, 'name': data.name.strip(), 'role': 'viewer', 'avatar': avatar}
+    return {'id': user_id, 'email': data.email, 'name': data.name.strip(), 'role': 'viewer', 'avatar': avatar, 'avatar_url': None}
 
 @app.post('/api/auth/login')
 def login(data: Credentials, request: Request, response: Response):
@@ -94,7 +96,7 @@ def login(data: Credentials, request: Request, response: Response):
     if not user:
         raise HTTPException(401, 'Неверный адрес или пароль.')
     set_session(response, user['id'])
-    return {k: user[k] for k in ('id', 'email', 'name', 'role', 'avatar')}
+    return public_user(user)
 
 _DUMMY_HASH = hash_password('dummy-password-no-account')
 
@@ -109,13 +111,117 @@ def logout(request: Request, response: Response):
         conn.execute('DELETE FROM sessions WHERE token_hash=?', (hashlib.sha256(token.encode()).hexdigest(),))
     response.delete_cookie('session', path='/')
 
+class ProfileEdit(BaseModel):
+    name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=2, max_length=80)]
+    email: str = Field(min_length=3, max_length=254)
+    current_password: str = Field(default='', max_length=128)
+
+    @field_validator('email')
+    @classmethod
+    def valid_email(cls, value):
+        return Credentials.valid_email(value)
+
+@app.patch('/api/auth/profile')
+def edit_profile(data: ProfileEdit, user: User):
+    rate_limit('profile:' + user['id'])
+    try:
+        with db() as conn:
+            conn.execute('BEGIN IMMEDIATE')
+            stored = conn.execute('SELECT * FROM users WHERE id=?', (user['id'],)).fetchone()
+            if data.email != stored['email'] and not verify_password(data.current_password, stored['password_hash']):
+                raise HTTPException(400, 'Для смены почты укажите верный текущий пароль.')
+            conn.execute('UPDATE users SET name=?,email=? WHERE id=?', (data.name, data.email, user['id']))
+            updated = conn.execute('SELECT * FROM users WHERE id=?', (user['id'],)).fetchone()
+    except sqlite3.IntegrityError:
+        raise HTTPException(409, 'Этот адрес уже используется другим аккаунтом.')
+    return public_user(updated)
+
+class PasswordEdit(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
+    password: str = Field(min_length=10, max_length=128)
+
+@app.post('/api/auth/password', status_code=204)
+def edit_password(data: PasswordEdit, request: Request, user: User):
+    rate_limit('password:' + user['id'], 8)
+    token_hash = hashlib.sha256(request.cookies.get('session', '').encode()).hexdigest()
+    with db() as conn:
+        conn.execute('BEGIN IMMEDIATE')
+        stored = conn.execute('SELECT password_hash FROM users WHERE id=?', (user['id'],)).fetchone()
+        if not verify_password(data.current_password, stored['password_hash']):
+            raise HTTPException(400, 'Текущий пароль указан неверно.')
+        conn.execute('UPDATE users SET password_hash=? WHERE id=?', (hash_password(data.password), user['id']))
+        conn.execute('DELETE FROM sessions WHERE user_id=? AND token_hash<>?', (user['id'], token_hash))
+
+class AvatarChoice(BaseModel):
+    avatar: int = Field(ge=1, le=10, strict=True)
+
+def remove_avatar_file(filename):
+    try:
+        (AVATARS / filename).unlink(missing_ok=True)
+    except OSError:
+        log.warning('Could not remove unused avatar %s', filename, exc_info=True)
+
+def replace_avatar(user_id, avatar=None, filename=None):
+    with db() as conn:
+        conn.execute('BEGIN IMMEDIATE')
+        old = conn.execute('SELECT avatar_file FROM users WHERE id=?', (user_id,)).fetchone()['avatar_file']
+        conn.execute('UPDATE users SET avatar=coalesce(?,avatar),avatar_file=? WHERE id=?', (avatar, filename, user_id))
+        updated = conn.execute('SELECT * FROM users WHERE id=?', (user_id,)).fetchone()
+    if old and old != filename:
+        remove_avatar_file(old)
+    return public_user(updated)
+
+@app.put('/api/auth/avatar')
+def choose_avatar(data: AvatarChoice, user: User):
+    return replace_avatar(user['id'], avatar=data.avatar)
+
+@app.post('/api/auth/avatar')
+def upload_avatar(user: User, file: UploadFile = File()):
+    rate_limit('avatar:' + user['id'], 20)
+    maximum = 5 * 1024 * 1024
+    try:
+        data = file.file.read(maximum + 1)
+    finally:
+        file.file.close()
+    if len(data) > maximum:
+        raise HTTPException(413, 'Выберите изображение размером до 5 МБ.')
+    filename = uuid4().hex + '.webp'
+    path = AVATARS / filename
+    try:
+        try:
+            with Image.open(BytesIO(data)) as image:
+                if image.format not in ('JPEG', 'PNG', 'WEBP'):
+                    raise HTTPException(422, 'Поддерживаются изображения JPG, PNG и WebP.')
+                if image.width * image.height > 16_000_000:
+                    raise HTTPException(422, 'Выберите изображение размером до 16 мегапикселей.')
+                square = ImageOps.fit(ImageOps.exif_transpose(image).convert('RGBA'), (512, 512), method=Image.Resampling.LANCZOS)
+                square.info.clear()
+                square.save(path, 'WEBP', quality=90, method=4)
+        except (UnidentifiedImageError, OSError, ValueError, SyntaxError, Image.DecompressionBombError) as exc:
+            raise HTTPException(422, 'Не удалось открыть изображение. Выберите другой JPG, PNG или WebP.') from exc
+        return replace_avatar(user['id'], filename=filename)
+    except BaseException:
+        remove_avatar_file(filename)
+        raise
+
+@app.get('/api/avatars/{filename}')
+def avatar_image(filename: str, user: User):
+    if not re.fullmatch(r'[0-9a-f]{32}\.webp', filename):
+        raise HTTPException(404, 'Аватарка не найдена.')
+    with db() as conn:
+        exists = conn.execute('SELECT 1 FROM users WHERE avatar_file=?', (filename,)).fetchone()
+    path = AVATARS / filename
+    if not exists or not path.is_file():
+        raise HTTPException(404, 'Аватарка не найдена.')
+    return FileResponse(path, media_type='image/webp')
+
 @app.get('/api/health')
 def health():
     with db() as conn:
         conn.execute('SELECT 1').fetchone()
     return {'status': 'ok', 'generation_configured': llm_configured()}
 
-LECTURE_COLUMNS = 'l.id,l.owner_id,l.course_id,l.title,l.description,l.source,l.source_url,l.external_id,l.cover,l.status,l.duration,l.error,l.is_demo,l.created_at,c.title AS course,u.name AS author,u.avatar AS author_avatar'
+LECTURE_COLUMNS = "l.id,l.owner_id,l.course_id,l.title,l.description,l.source,l.source_url,l.external_id,l.cover,l.status,l.duration,l.error,l.is_demo,l.created_at,c.title AS course,u.name AS author,u.avatar AS author_avatar,CASE WHEN u.avatar_file IS NULL THEN NULL ELSE '/api/avatars/' || u.avatar_file END AS author_avatar_url"
 
 @app.get('/api/courses')
 def courses(user: User):
@@ -410,7 +516,7 @@ def suggest(data: Suggestion, user: User):
 def admin_dashboard(user: User):
     require_admin(user)
     with db() as conn:
-        return {'users': [dict(r) for r in conn.execute('SELECT id,email,name,role,avatar,created_at FROM users ORDER BY created_at DESC')],
+        return {'users': [{**public_user(r), 'created_at': r['created_at']} for r in conn.execute('SELECT * FROM users ORDER BY created_at DESC')],
             'suggestions': [dict(r) for r in conn.execute('SELECT s.*,u.name AS author FROM video_suggestions s JOIN users u ON u.id=s.user_id ORDER BY s.created_at DESC')]}
 
 class RoleChange(BaseModel):

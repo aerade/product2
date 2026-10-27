@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
  name TEXT NOT NULL, password_hash TEXT NOT NULL,
  role TEXT NOT NULL DEFAULT 'viewer' CHECK(role IN ('viewer','teacher','admin')),
  avatar INTEGER CHECK(avatar BETWEEN 1 AND 10),
+ avatar_file TEXT,
  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
 CREATE TABLE IF NOT EXISTS sessions (
  token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -81,8 +82,11 @@ def init_db():
         conn.execute('PRAGMA journal_mode=WAL')
         conn.executescript(SCHEMA)
         conn.execute('BEGIN IMMEDIATE')
-        if 'avatar' not in {row['name'] for row in conn.execute('PRAGMA table_info(users)')}:
+        columns = {row['name'] for row in conn.execute('PRAGMA table_info(users)')}
+        if 'avatar' not in columns:
             conn.execute('ALTER TABLE users ADD COLUMN avatar INTEGER CHECK(avatar BETWEEN 1 AND 10)')
+        if 'avatar_file' not in columns:
+            conn.execute('ALTER TABLE users ADD COLUMN avatar_file TEXT')
         conn.execute('UPDATE users SET avatar=abs(random() % 10)+1 WHERE avatar IS NULL')
         conn.execute('''
             CREATE TRIGGER IF NOT EXISTS assign_user_avatar

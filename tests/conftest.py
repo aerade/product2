@@ -40,3 +40,5 @@ def fake_vectors(monkeypatch):
         return [np.array([1.,0.,0.],dtype=np.float32) for _ in texts]
     monkeypatch.setattr(importlib.import_module('backend.processing'), 'embed', fake_embed)
     monkeypatch.setattr(importlib.import_module('backend.search'), 'embed', fake_embed)
+    monkeypatch.setattr(importlib.import_module('backend.search'), 'relevance', lambda query, passages: [0.9] * len(passages))
+    monkeypatch.setattr(importlib.import_module('backend.worker'), 'media_duration', lambda path: 100.0)

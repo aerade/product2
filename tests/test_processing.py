@@ -95,6 +95,18 @@ def test_deletion_cascades_personal_data(client,login,fake_vectors):
             assert conn.execute(f'SELECT count(*) FROM {table} WHERE lecture_id=?',('ready',)).fetchone()[0]==0
 
 
+def test_unreadable_video_with_subtitles_never_marked_ready(client, login, fake_vectors, monkeypatch):
+    login('teacher')
+    monkeypatch.setattr(importlib.import_module('backend.worker'), 'media_duration', lambda path: None)
+    response=client.post('/api/lectures/upload',data={'title':'Повреждённое видео'},files={
+        'video':('broken.mp4',b'0000ftyp00000000','video/mp4'),
+        'subtitles':('lecture.srt',SRT.encode(),'text/plain')})
+    assert response.status_code==201
+    assert run_once()
+    lecture=client.get('/api/lectures/'+response.json()['id']).json()
+    assert lecture['status']=='failed' and 'исправный MP4/WebM' in lecture['error']
+
+
 def test_import_tries_audio_after_subtitle_failure(tmp_path, monkeypatch):
     import yt_dlp
     processing = importlib.import_module('backend.processing')

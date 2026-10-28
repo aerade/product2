@@ -27,6 +27,9 @@ def main():
         from .embeddings import embed
         print('Загружаем многоязычную модель поиска…')
         embed(['Проверка смыслового поиска'])
+        from .rerank import relevance
+        print('Загружаем модель проверки найденных фрагментов…')
+        relevance('Что хранит ДНК?', ['ДНК хранит наследственную информацию.'])
         from faster_whisper import WhisperModel
         from .config import MODELS
         WhisperModel(os.getenv('WHISPER_MODEL', 'large-v3'), device='cpu', compute_type='int8', download_root=str(MODELS / 'whisper'))

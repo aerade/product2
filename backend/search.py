@@ -3,6 +3,7 @@ from functools import lru_cache
 import numpy as np
 from .db import db
 from .embeddings import embed, MODEL
+from .rerank import relevance
 
 @lru_cache(maxsize=128)
 def query_embedding(query):
@@ -22,6 +23,8 @@ def search(query, lecture_ids=None, limit=10):
     vector = query_embedding(query)
     matrix = np.stack([np.frombuffer(r['vector'], dtype=np.float32) for r in rows])
     scores = matrix @ vector
-    minimum = max(float(os.getenv('SEARCH_MIN_SCORE', '0.79')), float(scores.max()) - 0.10)
-    order = [i for i in np.argsort(scores)[::-1] if scores[i] >= minimum][:limit]
-    return [{**{k: rows[int(i)][k] for k in ('id', 'lecture_id', 'title', 'cover', 'start_seconds', 'end_seconds', 'text')}, 'score': round(float(scores[i]), 4)} for i in order]
+    candidates = np.argsort(scores)[::-1][:max(1, min(100, int(os.getenv('SEARCH_CANDIDATES', '30'))))]
+    ranked = relevance(query, [rows[int(i)]['text'] for i in candidates])
+    minimum = max(float(os.getenv('SEARCH_MIN_RELEVANCE', '0.001')), max(ranked) * 0.08)
+    order = [j for j in np.argsort(ranked)[::-1] if ranked[j] >= minimum][:limit]
+    return [{**{k: rows[int(candidates[j])][k] for k in ('id', 'lecture_id', 'title', 'cover', 'start_seconds', 'end_seconds', 'text')}, 'score': round(float(ranked[j]), 5)} for j in order]

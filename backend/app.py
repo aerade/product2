@@ -479,7 +479,7 @@ def ask(lecture_id: str, data: Question, user: User):
         lecture_access(conn, lecture_id, user)
     rate_limit('ask:' + user['id'], 30, 300)
     hits = search(data.question, [lecture_id], 4)
-    if not hits or hits[0]['score'] < 0.79:
+    if not hits:
         return {'answer': 'В лекции недостаточно данных для ответа на этот вопрос. Уточните вопрос или выберите другую лекцию.', 'citations': [], 'mode': 'insufficient'}
     if not llm_configured():
         return {'answer': 'Найдены фрагменты по вашему вопросу. Генерация связного ответа требует подключения языковой модели. Ниже приведены цитаты из лекции.', 'citations': hits[:3], 'mode': 'excerpts'}

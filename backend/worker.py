@@ -38,9 +38,10 @@ def run_once():
             lecture = dict(conn.execute('SELECT * FROM lectures WHERE id=?', (job['lecture_id'],)).fetchone())
         if lecture['media_path']:
             duration = media_duration(lecture['media_path'])
-            if duration is not None:
-                with db() as conn:
-                    conn.execute('UPDATE lectures SET duration=? WHERE id=?', (duration, lecture['id']))
+            if duration is None:
+                raise ValueError('Не удалось прочитать видео. Загрузите исправный MP4/WebM и повторите обработку.')
+            with db() as conn:
+                conn.execute('UPDATE lectures SET duration=? WHERE id=?', (duration, lecture['id']))
         if lecture['subtitle_path']:
             segments = parse_subtitles(Path(lecture['subtitle_path']).read_text(encoding='utf-8-sig'))
         elif lecture['media_path']:
